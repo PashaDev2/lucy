@@ -3,6 +3,7 @@ import useLucy from "./useLucy";
 
 const lenis = new Lenis({
   lerp: 0.03,
+  syncTouch: true,
 });
 const scrollIcon = document.querySelector(".scroll-icon") as HTMLElement;
 lenis.on("scroll", (e: any) => {

@@ -52,7 +52,7 @@ function init() {
   const ambient = new THREE.HemisphereLight(0xffffff, 0x8d8d8d, 0.15);
   scene.add(ambient);
 
-  const loader = new THREE.TextureLoader().setPath("/src/textures/");
+  const loader = new THREE.TextureLoader().setPath("/textures/");
   const filenames = [
     "disturb.jpg",
     "colors.png",
@@ -151,7 +151,7 @@ function init() {
           //ripple
           float rb = fbm(vec2(uv.x*.5-velocity*.03, uv.y))*.1;
           //rb = sqrt(rb); 
-          uv += rb;
+          uv += rb;models
 
           //coloring
           float rz = fbm(uv*.9+vec2(velocity*.35, 0.0));
@@ -273,7 +273,7 @@ function init() {
     rectColor: bgMaterial.uniforms.rectColor.value,
   };
 
-  new PLYLoader().load("models/ply/binary/Lucy100k.ply", function (geometry) {
+  new PLYLoader().load("/models/ply/binary/Lucy100k.ply", function (geometry) {
     geometry.scale(0.0024, 0.0024, 0.0024);
     geometry.computeVertexNormals();
 
