@@ -96,7 +96,7 @@ function init() {
       uniform vec3      iResolution;           // viewport resolution (in pixels)
       uniform float     iTime;                 // shader playback time (in seconds)
       uniform vec2      iMouse;                // mouse pixel coords. xy: current (if MLB down), zw: click
-      
+
       uniform float uTotal;//number of rectangles
       uniform float uMinSize;//rectangle min size
       uniform float uMaxSize;//rectangle max size
@@ -135,7 +135,7 @@ function init() {
           f += 0.2500*noise( uv ); uv = m*uv;
           f += 0.1250*noise( uv ); uv = m*uv;
           f += 0.0625*noise( uv ); uv = m*uv;
-          
+
         f = 0.5 + 0.5*f;
           return f;
       }
@@ -167,11 +167,11 @@ function init() {
 
 
       float rectangle(vec2 uv, vec2 pos, float width, float height, float blur) {
-          
+
           pos = (vec2(width, height) + .01)/2. - abs(uv - pos);
           pos = smoothstep(0., blur , pos);
           return pos.x * pos.y; 
-        
+
       }
 
       mat2 rotate2d(float _angle){
@@ -183,10 +183,10 @@ function init() {
       {
         vec2 uv = fragCoord.xy / iResolution.xy * 2. - 1.;
           uv.x *= iResolution.x/iResolution.y;
-          
+
           //bg
           vec3 color = bg(uv)*(2.-abs(uv.y*2.));
-          
+
           //rectangles
           float velX = -iTime/8.;
           float velY = iTime/10.;
@@ -203,7 +203,7 @@ function init() {
               float rect = rectangle(uvRot, pos.xy, pos.z, pos.z, (uMaxSize+uMinSize-pos.z)/2.);
             color += rectColor * rect * pos.z/uMaxSize;
           }
-          
+
         fragColor = vec4(color, 1.0);
       }
       void main() {
@@ -224,7 +224,7 @@ function init() {
       iTime: { value: 0 },
       iMouse: { value: new THREE.Vector2() },
 
-      uTotal: { value: 60 },
+      uTotal: { value: 0 },
       uMinSize: { value: 0.03 },
       uMaxSize: { value: 0.08 },
       uYDistribution: { value: 0.5 },
@@ -273,7 +273,7 @@ function init() {
     rectColor: bgMaterial.uniforms.rectColor.value,
   };
 
-  new PLYLoader().load("/models/ply/binary/Lucy100k.ply", function (geometry) {
+  new PLYLoader().load("/models/ply/binary/Lucy100k.ply", function(geometry) {
     geometry.scale(0.0024, 0.0024, 0.0024);
     geometry.computeVertexNormals();
 
@@ -322,16 +322,16 @@ function init() {
     };
     // gui for lucy
     const lucyFolder = gui.addFolder("Lucy Material");
-    lucyFolder.add(params, "ior", 0, 2).onChange(function (val) {
+    lucyFolder.add(params, "ior", 0, 2).onChange(function(val) {
       lucyMaterial.ior = val;
     });
-    lucyFolder.add(params, "transmission", 0, 1).onChange(function (val) {
+    lucyFolder.add(params, "transmission", 0, 1).onChange(function(val) {
       lucyMaterial.transmission = val;
     });
-    lucyFolder.add(params, "roughness", 0, 1).onChange(function (val) {
+    lucyFolder.add(params, "roughness", 0, 1).onChange(function(val) {
       lucyMaterial.roughness = val;
     });
-    lucyFolder.add(params, "metalness", 0, 1).onChange(function (val) {
+    lucyFolder.add(params, "metalness", 0, 1).onChange(function(val) {
       lucyMaterial.metalness = val;
     });
   });
@@ -341,60 +341,60 @@ function init() {
 
   //  gui for spot light
   const lightFolder = gui.addFolder("Spot Light");
-  lightFolder.addColor(params, "color").onChange(function (val) {
+  lightFolder.addColor(params, "color").onChange(function(val) {
     spotLight.color.set(val);
   });
-  lightFolder.add(params, "intensity", 0, 2).onChange(function (val) {
+  lightFolder.add(params, "intensity", 0, 2).onChange(function(val) {
     spotLight.intensity = val;
   });
-  lightFolder.add(params, "distance", 0, 10).onChange(function (val) {
+  lightFolder.add(params, "distance", 0, 10).onChange(function(val) {
     spotLight.distance = val;
   });
-  lightFolder.add(params, "angle", 0, Math.PI).onChange(function (val) {
+  lightFolder.add(params, "angle", 0, Math.PI).onChange(function(val) {
     spotLight.angle = val;
   });
-  lightFolder.add(params, "penumbra", 0, 1).onChange(function (val) {
+  lightFolder.add(params, "penumbra", 0, 1).onChange(function(val) {
     spotLight.penumbra = val;
   });
-  lightFolder.add(params, "decay", 1, 2).onChange(function (val) {
+  lightFolder.add(params, "decay", 1, 2).onChange(function(val) {
     spotLight.decay = val;
   });
 
   // gui for bg shader
   const bgFolder = gui.addFolder("Background Shader");
-  bgFolder.add(params, "total", 0, 200).onChange(function (val) {
+  bgFolder.add(params, "total", 0, 200).onChange(function(val) {
     bgMaterial.uniforms.uTotal.value = val;
   });
-  bgFolder.add(params, "minSize", 0, 10).onChange(function (val) {
+  bgFolder.add(params, "minSize", 0, 10).onChange(function(val) {
     bgMaterial.uniforms.uMinSize.value = val;
   });
-  bgFolder.add(params, "maxSize", 0, 10).onChange(function (val) {
+  bgFolder.add(params, "maxSize", 0, 10).onChange(function(val) {
     bgMaterial.uniforms.uMaxSize.value = val;
   });
-  bgFolder.add(params, "yDistribution", 0, 1).onChange(function (val) {
+  bgFolder.add(params, "yDistribution", 0, 1).onChange(function(val) {
     bgMaterial.uniforms.uYDistribution.value = val;
   });
-  bgFolder.add(params, "noiseIntensity", 0, 10).onChange(function (val) {
+  bgFolder.add(params, "noiseIntensity", 0, 10).onChange(function(val) {
     bgMaterial.uniforms.uNoiseIntensity.value = val;
   });
-  bgFolder.add(params, "noiseDefinition", 0, 1).onChange(function (val) {
+  bgFolder.add(params, "noiseDefinition", 0, 1).onChange(function(val) {
     bgMaterial.uniforms.uNoiseDefinition.value = val;
   });
-  bgFolder.addColor(params, "bgColor").onChange(function (val) {
+  bgFolder.addColor(params, "bgColor").onChange(function(val) {
     bgMaterial.uniforms.bgColor.value = new THREE.Color(val);
   });
-  bgFolder.addColor(params, "rectColor").onChange(function (val) {
+  bgFolder.addColor(params, "rectColor").onChange(function(val) {
     bgMaterial.uniforms.rectColor.value = new THREE.Color(val);
   });
   bgFolder
     .add(params.glowPos, "x", -10, 10)
-    .onChange(function (val) {
+    .onChange(function(val) {
       bgMaterial.uniforms.uGlowPos.value.x = val;
     })
     .name("glowPosX");
   bgFolder
     .add(params.glowPos, "y", -10, 10)
-    .onChange(function (val) {
+    .onChange(function(val) {
       bgMaterial.uniforms.uGlowPos.value.y = val;
     })
     .name("glowPosY");
