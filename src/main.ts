@@ -151,7 +151,7 @@ function init() {
           //ripple
           float rb = fbm(vec2(uv.x*.5-velocity*.03, uv.y))*.1;
           //rb = sqrt(rb); 
-          uv += rb;models
+          uv += rb;
 
           //coloring
           float rz = fbm(uv*.9+vec2(velocity*.35, 0.0));
