@@ -4,6 +4,7 @@ import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { PLYLoader } from "three/addons/loaders/PLYLoader.js";
 import useLucy from "./useLucy";
 import CustomShaderMaterial from "three-custom-shader-material/vanilla";
+import Stats from "three/examples/jsm/libs/stats.module.js";
 
 let renderer: THREE.WebGLRenderer,
   scene: THREE.Scene,
@@ -12,7 +13,7 @@ let renderer: THREE.WebGLRenderer,
   lucyMesh: THREE.Mesh,
   lucyMaterial: THREE.MeshPhysicalMaterial,
   bgMaterial: THREE.ShaderMaterial,
-  bgMesh: THREE.Mesh;
+  bgMesh: THREE.Mesh, stats: Stats, params: Record<string, any>;
 
 document.addEventListener("DOMContentLoaded", init);
 
@@ -24,7 +25,7 @@ function init() {
     alpha: true,
     powerPreference: "high-performance",
   });
-  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setPixelRatio(Math.max(1, window.devicePixelRatio));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setAnimationLoop(animate);
   renderer.domElement.classList.add("canvas");
@@ -37,6 +38,9 @@ function init() {
   renderer.toneMappingExposure = 1;
 
   scene = new THREE.Scene();
+
+  stats = new Stats();
+  appElement.appendChild(stats.dom);
 
   camera = new THREE.PerspectiveCamera(
     40,
@@ -83,8 +87,8 @@ function init() {
   spotLight.map = null;
   spotLight.intensity = 5;
   spotLight.castShadow = true;
-  spotLight.shadow.mapSize.width = 1024;
-  spotLight.shadow.mapSize.height = 1024;
+  spotLight.shadow.mapSize.width = 258;
+  spotLight.shadow.mapSize.height = 258;
   spotLight.shadow.camera.near = 1;
   spotLight.shadow.camera.far = 10;
   spotLight.shadow.focus = 1;
@@ -97,17 +101,11 @@ function init() {
       uniform float     iTime;                 // shader playback time (in seconds)
       uniform vec2      iMouse;                // mouse pixel coords. xy: current (if MLB down), zw: click
 
-      uniform float uTotal;//number of rectangles
-      uniform float uMinSize;//rectangle min size
-      uniform float uMaxSize;//rectangle max size
-      uniform float uYDistribution;
-
       uniform float uNoiseIntensity;
       uniform float uNoiseDefinition;
       uniform vec2 uGlowPos;
 
-      uniform vec3 bgColor;
-      uniform vec3 rectColor;
+      uniform vec3 bgColor; 
 
       varying vec2 vUv;
 
@@ -179,35 +177,14 @@ function init() {
                       sin(_angle),cos(_angle));
       }
 
-      void mainImage( out vec4 fragColor, in vec2 fragCoord )
-      {
-        vec2 uv = fragCoord.xy / iResolution.xy * 2. - 1.;
-          uv.x *= iResolution.x/iResolution.y;
-
-          //bg
-          vec3 color = bg(uv)*(2.-abs(uv.y*2.));
-
-          //rectangles
-          float velX = -iTime/8.;
-          float velY = iTime/10.;
-          for(float i=0.; i<uTotal; i++){
-              float index = i/uTotal;
-              float rnd = random(vec2(index));
-              vec3 pos = vec3(0, 0., 0.);
-              pos.x = fract(velX*rnd+index)*4.-2.0;
-              pos.y = sin(index*rnd*1000.+velY) * uYDistribution;
-              pos.z = uMaxSize*rnd+uMinSize;
-              vec2 uvRot = uv - pos.xy + pos.z/2.;
-            uvRot = rotate2d( i+iTime/2. ) * uvRot;
-              uvRot += pos.xy+pos.z/2.;
-              float rect = rectangle(uvRot, pos.xy, pos.z, pos.z, (uMaxSize+uMinSize-pos.z)/2.);
-            color += rectColor * rect * pos.z/uMaxSize;
-          }
-
-        fragColor = vec4(color, 1.0);
-      }
       void main() {
-        mainImage(gl_FragColor, vUv * iResolution.xy);
+        vec2 uv = gl_FragColor.xy / iResolution.xy * 2. - 1.;
+        uv.x *= iResolution.x/iResolution.y;
+
+        //bg
+        vec3 color = bg(vUv)*(2.-abs(vUv.y*2.));   
+        vec4 fragColor = vec4(color, 1.0);
+        gl_FragColor = fragColor;
       }
     `,
     vertexShader: `
@@ -222,20 +199,12 @@ function init() {
         value: new THREE.Vector3(window.innerWidth, window.innerHeight, 1),
       },
       iTime: { value: 0 },
-      iMouse: { value: new THREE.Vector2() },
-
-      uTotal: { value: 0 },
-      uMinSize: { value: 0.03 },
-      uMaxSize: { value: 0.08 },
-      uYDistribution: { value: 0.5 },
       uNoiseIntensity: { value: 2.8 },
       uNoiseDefinition: { value: 0.6 },
       uGlowPos: { value: new THREE.Vector2(-2, 0) },
       bgColor: { value: new THREE.Color(0.01, 0.16, 0.42) },
-      rectColor: { value: new THREE.Color(0.01, 0.26, 0.57) },
     },
     side: THREE.DoubleSide,
-    // z index
     depthTest: false,
     depthWrite: false,
   });
@@ -252,7 +221,7 @@ function init() {
   lucyMaterial;
   lucyMaterial;
 
-  let params: Record<string, any> = {
+  params = {
     color: spotLight.color.getHex(),
     intensity: spotLight.intensity,
     distance: spotLight.distance,
@@ -262,15 +231,10 @@ function init() {
     focus: spotLight.shadow.focus,
     shadows: true,
 
-    total: bgMaterial.uniforms.uTotal.value,
-    minSize: bgMaterial.uniforms.uMinSize.value,
-    maxSize: bgMaterial.uniforms.uMaxSize.value,
-    yDistribution: bgMaterial.uniforms.uYDistribution.value,
     noiseIntensity: bgMaterial.uniforms.uNoiseIntensity.value,
     noiseDefinition: bgMaterial.uniforms.uNoiseDefinition.value,
     glowPos: bgMaterial.uniforms.uGlowPos.value,
     bgColor: bgMaterial.uniforms.bgColor.value,
-    rectColor: bgMaterial.uniforms.rectColor.value,
   };
 
   new PLYLoader().load("/models/ply/binary/Lucy100k.ply", function(geometry) {
@@ -282,30 +246,18 @@ function init() {
       uniforms: {
         time: { value: 0 },
       },
-      envMap: textures["disturb.jpg"],
-      envMapIntensity: 1,
-      ior: 1.2,
-      transmission: 0.141,
-      reflectivity: 0.5,
-      roughness: 0.8,
-      metalness: 0.1,
+      transmission: 0.47,
+      reflectivity: 1,
+      roughness: 1,
+      metalness: 0.6,
       vertexShader: `
-        void main() {
-          csm_Position = position;
-        }
       `,
       fragmentShader: `
-        uniform float time;
-        uniform sampler2D sampler;
-
-        void main() {
-        }
       `,
       silent: true,
-      depthTest: true,
-      depthWrite: true,
+      flatShading: false,
     }) as unknown as THREE.MeshPhysicalMaterial;
-
+    lucyMaterial.ior = 0.77;
     lucyMesh = new THREE.Mesh(geometry, lucyMaterial);
     lucyMesh.castShadow = true;
     lucyMesh.receiveShadow = true;
@@ -319,6 +271,7 @@ function init() {
       roughness: lucyMaterial.roughness,
       metalness: lucyMaterial.metalness,
       envMapIntensity: lucyMaterial.envMapIntensity,
+      flatShading: lucyMaterial.flatShading,
     };
     // gui for lucy
     const lucyFolder = gui.addFolder("Lucy Material");
@@ -334,10 +287,15 @@ function init() {
     lucyFolder.add(params, "metalness", 0, 1).onChange(function(val) {
       lucyMaterial.metalness = val;
     });
+    lucyFolder.add(params, "flatShading").onChange(function(val) {
+      lucyMaterial.flatShading = val;
+      lucyMaterial.needsUpdate = true;
+    });
   });
 
   window.addEventListener("resize", onWindowResize);
   window.addEventListener("mousemove", onMouseMove);
+  window.addEventListener("wheel", onWheel);
 
   //  gui for spot light
   const lightFolder = gui.addFolder("Spot Light");
@@ -362,18 +320,7 @@ function init() {
 
   // gui for bg shader
   const bgFolder = gui.addFolder("Background Shader");
-  bgFolder.add(params, "total", 0, 200).onChange(function(val) {
-    bgMaterial.uniforms.uTotal.value = val;
-  });
-  bgFolder.add(params, "minSize", 0, 10).onChange(function(val) {
-    bgMaterial.uniforms.uMinSize.value = val;
-  });
-  bgFolder.add(params, "maxSize", 0, 10).onChange(function(val) {
-    bgMaterial.uniforms.uMaxSize.value = val;
-  });
-  bgFolder.add(params, "yDistribution", 0, 1).onChange(function(val) {
-    bgMaterial.uniforms.uYDistribution.value = val;
-  });
+
   bgFolder.add(params, "noiseIntensity", 0, 10).onChange(function(val) {
     bgMaterial.uniforms.uNoiseIntensity.value = val;
   });
@@ -382,9 +329,6 @@ function init() {
   });
   bgFolder.addColor(params, "bgColor").onChange(function(val) {
     bgMaterial.uniforms.bgColor.value = new THREE.Color(val);
-  });
-  bgFolder.addColor(params, "rectColor").onChange(function(val) {
-    bgMaterial.uniforms.rectColor.value = new THREE.Color(val);
   });
   bgFolder
     .add(params.glowPos, "x", -10, 10)
@@ -434,20 +378,25 @@ function onMouseMove(event: MouseEvent) {
   const distance = -camera.position.z / dir.z - 1;
   const pos = camera.position.clone().add(dir.multiplyScalar(distance));
   spotLight.position.copy(pos);
+}
 
-  if (bgMaterial) {
-    bgMaterial.uniforms.iMouse.value.x = x;
-    bgMaterial.uniforms.iMouse.value.y = y;
-  }
+function onWheel() {
 }
 
 function animate() {
   const time = performance.now() / 3000;
   const scrollPosition = useLucy.getState().scrollPosition * 0.0021;
-
+  if (stats) stats.update();
+  let lerped = 0;
   if (lucyMesh) {
-    lucyMesh.position.y = scrollPosition - 0.5;
-    lucyMesh.rotation.y = scrollPosition;
+    lerped = THREE.MathUtils.lerp(lucyMesh.position.y, scrollPosition - 0.5, 0.05);
+    lucyMesh.position.y = lerped;
+    lucyMesh.rotation.y = lerped;
+  }
+  if (lucyMaterial && params.ior) {
+    console.log(lucyMaterial.ior);
+    lucyMaterial.ior = params.ior + lerped * 0.5;
+    lucyMaterial.needsUpdate = true;
   }
   if (bgMaterial) {
     bgMaterial.uniforms.iTime.value = time;

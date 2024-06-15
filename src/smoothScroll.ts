@@ -7,7 +7,7 @@ const lenis = new Lenis({
 });
 const scrollIcon = document.querySelector(".scroll-icon") as HTMLElement;
 lenis.on("scroll", (e: any) => {
-  const scrollPos = e.animatedScroll;
+  const scrollPos = e.targetScroll;
   useLucy.setState({ scrollPosition: scrollPos });
 
   if (scrollPos > 100 && scrollIcon.classList.contains("hidden") === false) {
